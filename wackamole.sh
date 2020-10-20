@@ -28,11 +28,16 @@ do
 
 cp $work_dir/new_moles.txt $work_dir/old_moles.txt
 
-cur_height="$($cnct_monerod print_height | tail -1)"
+$cnct_monerod print_height | tail -1 > $work_dir/cur_height.txt
+cat $work_dir/cur_height.txt
+cur_height="$(cat $work_dir/cur_height.txt | tr -dc '[:print:]' | sed 's/0m//' | tr -d '\n')"
+echo "$cur_height"|od -xc
+#cur_height=$(echo $cur_height)
+#cur_height=$(echo "$cur_height" | tr -d '\r\n\' | tr -cd "[:print:]" )
+# tr -cd "[:print:]\n" < file1   
+cur_height=$(clean $cur_height)
 echo $cur_height
-#cur_height=$(echo $cur_height | sed 's/[^a-zA-Z0-9]//g')
-#cur_height=$(clean $cur_height)
-echo $cur_height
+echo "$cur_height"|od -xc
 cp $p2pstate $work_dir
 
 #sync_info
@@ -50,12 +55,15 @@ echo "Done waiting"
 $start_fake sync_info > $work_dir/sync_info.txt
 cat $work_dir/sync_info.txt
 # Delete the last line because there are brackets. 
-sed -n '5,$d' -i $work_dir/sync_info.txt
+sed -n '5,$p' -i $work_dir/sync_info.txt
+sed -i '$d' $work_dir/sync_info.txt
 
 cat $work_dir/sync_info.txt
 
 # This could be done by storing the sync_info into an array and then comparing cur_height to the values, but....
-grep $cur_height $work_dir/sync_info.txt | cut -f 1 -d ":" > $work_dir/new_moles.txt
+echo "grepping"
+grep -F "$cur_height" $work_dir/sync_info.txt 
+#| cut -f 1 -d ":" > $work_dir/new_moles.txt
 
 echo "new moles"
 cat $work_dir/new_moles.txt
@@ -65,9 +73,11 @@ sort $work_dir/old_moles.txt | uniq > $work_dir/new_moles.txt
 
 
 # For end of accessing fake monero
-kill -9 `cat $work_dir/save_pid.txt`
+echo "Killing monerod"
+$start_fake exit
+#kill -15 `cat $work_dir/save_pid.txt`
 rm $work_dir/save_pid.txt
-
+sleep 3
 cat $work_dir/sync_info.txt
 echo "and the new_moles"
 cat $work_dir/new_moles.txt
