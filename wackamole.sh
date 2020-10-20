@@ -52,12 +52,12 @@ sleep 5
 echo "Done waiting"
 # Fake directory is empty, fake is not syncing. Get output of sync_info and parse it for moles
 $start_fake sync_info > $work_dir/sync_info.txt
-cat $work_dir/sync_info.txt
+#cat $work_dir/sync_info.txt
 # Delete the last line because there are brackets. 
 sed -n '5,$p' -i $work_dir/sync_info.txt
 sed -i '$d' $work_dir/sync_info.txt
 
-cat $work_dir/sync_info.txt
+#cat $work_dir/sync_info.txt
 
 # This could be done by storing the sync_info into an array and then comparing cur_height to the values, but....
 echo "grepping"
@@ -83,7 +83,7 @@ cat $work_dir/new_moles.txt
 echo "Adding new moles to monerod ban list"
 cat $work_dir/new_moles.txt | while read ip
 do
-$cnct_monerod ban $ip
+$cnct_monerod ban $ip -1
 done 
 
 echo "Starting over #####################"
