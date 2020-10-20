@@ -3,12 +3,12 @@
 rpc_ip=127.0.0.1
 rpc_p=18081
 call_monerod=monerod
-cnct_monerod="$call_monerod --rpc-bind-ip $rpc_ip --rpc-bind-port=$rpc_p"
+cnct_monerod="$call_monerod --rpc-bind-ip $rpc_ip --rpc-bind-port $rpc_p"
 mon_service=MON_daemon
 work_dir=~/wacky_work
 p2pstate=~/.bitmonero/p2pstate.bin
 #Could get fancy with this and make it a systemd service as well
-start_fake="$call_monerod --data-dir $work_dir --no-sync --p2p-bind-port 18060 --rpc-bind-port 18061 --zmq-rpc-bind-port 18062"
+start_fake="$call_monerod --data-dir $work_dir --no-sync --p2p-bind-port 18060 --rpc-bind-port 18061 --zmq-rpc-bind-port 18062 --out-peers 512"
 
 #Function
 # https://stackoverflow.com/questions/23816264/remove-all-special-characters-and-case-from-string-in-bash
@@ -28,16 +28,15 @@ do
 
 cp $work_dir/new_moles.txt $work_dir/old_moles.txt
 
+# This goddamned variable kept on getting special characters and shit. This is shit. 
 $cnct_monerod print_height | tail -1 > $work_dir/cur_height.txt
 cat $work_dir/cur_height.txt
 cur_height="$(cat $work_dir/cur_height.txt | tr -dc '[:print:]' | sed 's/0m//' | tr -d '\n')"
-echo "$cur_height"|od -xc
-#cur_height=$(echo $cur_height)
-#cur_height=$(echo "$cur_height" | tr -d '\r\n\' | tr -cd "[:print:]" )
-# tr -cd "[:print:]\n" < file1   
 cur_height=$(clean $cur_height)
 echo $cur_height
 echo "$cur_height"|od -xc
+
+
 cp $p2pstate $work_dir
 
 #sync_info
@@ -62,8 +61,7 @@ cat $work_dir/sync_info.txt
 
 # This could be done by storing the sync_info into an array and then comparing cur_height to the values, but....
 echo "grepping"
-grep -F "$cur_height" $work_dir/sync_info.txt 
-#| cut -f 1 -d ":" > $work_dir/new_moles.txt
+grep -F "$cur_height" $work_dir/sync_info.txt | cut -f 1 -d ":" > $work_dir/new_moles.txt
 
 echo "new moles"
 cat $work_dir/new_moles.txt
@@ -82,6 +80,13 @@ cat $work_dir/sync_info.txt
 echo "and the new_moles"
 cat $work_dir/new_moles.txt
 
+echo "Adding new moles to monerod ban list"
+cat $work_dir/new_moles.txt | while read ip
+do
+$cnct_monerod ban $ip
+done 
+
 echo "Starting over #####################"
+echo "kill script now to stop. otherwise have to hunt down and kill monerod"
 sleep 2
 done
