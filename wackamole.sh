@@ -32,12 +32,13 @@ do
 cp $work_dir/new_moles.txt $work_dir/old_moles.txt
 
 # This goddamned variable kept on getting special characters and shit. This is shit. 
-$cnct_monerod print_height | tail -1 > $work_dir/cur_height.txt
-cat $work_dir/cur_height.txt
-cur_height="$(cat $work_dir/cur_height.txt | tr -dc '[:print:]' | sed 's/0m//' | tr -d '\n')"
-cur_height=$(clean $cur_height)
-echo $cur_height
-echo "$cur_height"|od -xc
+# HAH! We may not need this crap
+#$cnct_monerod print_height | tail -1 > $work_dir/cur_height.txt
+#cat $work_dir/cur_height.txt
+#cur_height="$(cat $work_dir/cur_height.txt | tr -dc '[:print:]' | sed 's/0m//' | tr -d '\n')"
+#cur_height=$(clean $cur_height)
+#echo $cur_height
+#echo "$cur_height"|od -xc
 
 
 cp $p2pstate $work_dir
@@ -47,18 +48,39 @@ echo "Starting fake"
 $start_fake --detach --pidfile $work_dir/save_pid.txt
 
 echo "Waiting...."
-sleep 30
+sleep 100
 echo "Done waiting"
 # Fake directory is empty, fake is not syncing. Get output of sync_info and parse it for moles
-$start_fake sync_info > $work_dir/sync_info.txt
-# Delete the last line because there are brackets. 
-sed -n '5,$p' -i $work_dir/sync_info.txt
-sed -i '$d' $work_dir/sync_info.txt
+$start_fake sync_info | grep normal >  $work_dir/sync_info.txt
+
+all_peers_heights=$(awk -v OFS="\t" '$1=$1' $work_dir/sync_info.txt | cut -f 5)
+declare -a all_peers_heights_a
+all_peers_heights_a=($all_peers_heights)
+echo "all peers"
+echo ${all_peers_heights_a[@]}
+
+#index_ahp=$(echo ${all_peers_heights_a[1]})
+#index_ahp_a=($index_ahp)
+
+c=0
+for i in "${all_peers_heights_a[@]}"
+do
+echo "in loop"
+c=$((c+1))
+if [[ "$i" == "1" ]]
+then
+echo "in if"
+sed "${c}q;d" $work_dir/sync_info.txt 
+sed "${c}q;d" $work_dir/sync_info.txt | cut -f 1 -d ":" >> $work_dir/new_moles.txt
+fi
+done
 
 # This could be done by storing the sync_info into an array and then comparing cur_height to the values, but....
 # This will need to be changed to an array comparison if we need to wait 10 minutes to avoid false positives
-echo "grepping"
-grep -F "$cur_height" $work_dir/sync_info.txt | cut -f 1 -d ":" > $work_dir/new_moles.txt
+#echo "grepping"
+#grep -F "$cur_height" $work_dir/sync_info.txt | cut -f 1 -d ":" > $work_dir/new_moles.txt
+
+
 
 echo "new moles"
 cat $work_dir/new_moles.txt
@@ -75,7 +97,8 @@ sleep 3
 cat $work_dir/sync_info.txt
 echo "and the new_moles"
 cat $work_dir/new_moles.txt
-
+echo "########## TOTAL MOLES: "
+wc -l $work_dir/new_moles.txt
 echo "Adding new moles to monerod ban list"
 cat $work_dir/new_moles.txt | while read ip
 do
