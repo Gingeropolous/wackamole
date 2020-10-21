@@ -13,13 +13,6 @@ work_dir=~/wacky_work
 #Could get fancy with this and make it a systemd service as well
 start_fake="$call_monerod --data-dir $work_dir --no-sync --p2p-bind-port 18060 --rpc-bind-port 18061 --zmq-rpc-bind-port 18062 --out-peers 512"
 
-#Function
-# https://stackoverflow.com/questions/23816264/remove-all-special-characters-and-case-from-string-in-bash
-clean() {
-    local a=${1//[^[:alnum:]]/}
-    echo "${a,,}"
-}
-
 # Set up environment
 
 rm -r $work_dir
@@ -30,16 +23,6 @@ while true
 do
 
 cp $work_dir/new_moles.txt $work_dir/old_moles.txt
-
-# This goddamned variable kept on getting special characters and shit. This is shit. 
-# HAH! We may not need this crap
-#$cnct_monerod print_height | tail -1 > $work_dir/cur_height.txt
-#cat $work_dir/cur_height.txt
-#cur_height="$(cat $work_dir/cur_height.txt | tr -dc '[:print:]' | sed 's/0m//' | tr -d '\n')"
-#cur_height=$(clean $cur_height)
-#echo $cur_height
-#echo "$cur_height"|od -xc
-
 
 cp $p2pstate $work_dir
 
@@ -59,9 +42,6 @@ all_peers_heights_a=($all_peers_heights)
 echo "all peers"
 echo ${all_peers_heights_a[@]}
 
-#index_ahp=$(echo ${all_peers_heights_a[1]})
-#index_ahp_a=($index_ahp)
-
 c=0
 for i in "${all_peers_heights_a[@]}"
 do
@@ -70,17 +50,9 @@ c=$((c+1))
 if [[ "$i" == "1" ]]
 then
 echo "in if"
-sed "${c}q;d" $work_dir/sync_info.txt 
 sed "${c}q;d" $work_dir/sync_info.txt | cut -f 1 -d ":" >> $work_dir/new_moles.txt
 fi
 done
-
-# This could be done by storing the sync_info into an array and then comparing cur_height to the values, but....
-# This will need to be changed to an array comparison if we need to wait 10 minutes to avoid false positives
-#echo "grepping"
-#grep -F "$cur_height" $work_dir/sync_info.txt | cut -f 1 -d ":" > $work_dir/new_moles.txt
-
-
 
 echo "new moles"
 cat $work_dir/new_moles.txt
@@ -88,24 +60,23 @@ cat $work_dir/new_moles.txt
 cat $work_dir/new_moles.txt >> $work_dir/old_moles.txt
 sort $work_dir/old_moles.txt | uniq > $work_dir/new_moles.txt
 
-
 # For end of accessing fake monero
 echo "Killing monerod"
 $start_fake exit
-#kill -15 `cat $work_dir/save_pid.txt`
 sleep 3
 cat $work_dir/sync_info.txt
-echo "and the new_moles"
+echo "and all the moles"
 cat $work_dir/new_moles.txt
 echo "########## TOTAL MOLES: "
 wc -l $work_dir/new_moles.txt
 echo "Adding new moles to monerod ban list"
+
 cat $work_dir/new_moles.txt | while read ip
-do
+do # think this will work in parallel?
 $cnct_monerod ban $ip
 done 
 
 echo "Starting over #####################"
 echo "kill script now to stop. otherwise have to hunt down and kill monerod"
-sleep 2
+sleep 3
 done
