@@ -61,7 +61,7 @@ echo "fake height: "$fake_height
 echo "$fake_height"|od -xc
 
 $start_fake sync_info | grep normal >  $work_dir/sync_info.txt
-cat $work_dir/sync_info.txt
+#cat $work_dir/sync_info.txt
 
 all_peers_heights=$(awk -v OFS="\t" '$1=$1' $work_dir/sync_info.txt | cut -f 5)
 declare -a all_peers_heights_a=($all_peers_heights)
@@ -71,19 +71,19 @@ echo ${all_peers_heights_a[@]}
 c=0
 for i in "${all_peers_heights_a[@]}"
 do
-echo "in loop"
+#echo "in loop"
 c=$((c+1))
-echo "peer: "$i
-echo "us: "$fake_height
+#echo "peer: "$i
+#echo "us: "$fake_height
 if [[ "$i" == "$fake_height" ]]
 then
-echo "in if"
+#echo "in if"
 sed "${c}q;d" $work_dir/sync_info.txt | cut -f 1 -d ":" >> $work_dir/new_moles.txt
 fi
 done
 
-echo "new moles"
-cat $work_dir/new_moles.txt
+#echo "new moles"
+#cat $work_dir/new_moles.txt
 
 cat $work_dir/new_moles.txt >> $work_dir/old_moles.txt
 sort $work_dir/old_moles.txt | uniq > $work_dir/new_moles.txt
@@ -92,9 +92,8 @@ sort $work_dir/old_moles.txt | uniq > $work_dir/new_moles.txt
 echo "Killing monerod"
 $start_fake exit
 sleep 3
-cat $work_dir/sync_info.txt
-echo "and all the moles"
-cat $work_dir/new_moles.txt
+#echo "and all the moles"
+#cat $work_dir/new_moles.txt
 echo "########## TOTAL MOLES: "
 wc -l $work_dir/new_moles.txt
 echo "Adding new moles to monerod ban list"
