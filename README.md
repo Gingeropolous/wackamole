@@ -1,3 +1,4 @@
+## As of 2020-11-03, the malicious peers have stopped using the mirror height tactic, so this script will no longer be effective. 
 # wackamole
 
 All the bash, all the glory.
